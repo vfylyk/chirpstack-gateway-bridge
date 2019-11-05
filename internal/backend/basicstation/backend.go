@@ -302,8 +302,14 @@ func (b *Backend) handleRouterInfo(r *http.Request, c *websocket.Conn) {
 		}
 	}
 
+	bb, err := json.Marshal(resp)
+	if err != nil {
+		log.WithError(err).Error("backend/basicstation: marshal json error")
+		return
+	}
+
 	c.SetWriteDeadline(time.Now().Add(b.writeTimeout))
-	if err := c.WriteJSON(resp); err != nil {
+	if err := c.WriteMessage(websocket.TextMessage, bb); err != nil {
 		log.WithError(err).Error("backend/basicstation: websocket send message error")
 		return
 	}
@@ -622,8 +628,13 @@ func (b *Backend) sendToGateway(gatewayID lorawan.EUI64, v interface{}) error {
 		return errors.Wrap(err, "get gateway error")
 	}
 
+	bb, err := json.Marshal(v)
+	if err != nil {
+		return errors.Wrap(err, "marshal json error")
+	}
+
 	gw.conn.SetWriteDeadline(time.Now().Add(b.writeTimeout))
-	if err := gw.conn.WriteJSON(v); err != nil {
+	if err := gw.conn.WriteMessage(websocket.TextMessage, bb); err != nil {
 		return errors.Wrap(err, "send message to gateway error")
 	}
 
